@@ -33,7 +33,7 @@ jobs:
             dosfstools \
             mtools \
             squashfs-tools \
-            qemu-headless-arch-extra \
+            qemu-system-x86 \
             edk2-ovmf
 
       - name: Prepare repos for mkosi
