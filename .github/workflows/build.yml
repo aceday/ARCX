@@ -32,7 +32,9 @@ jobs:
             btrfs-progs \
             dosfstools \
             mtools \
-            squashfs-tools
+            squashfs-tools \
+            qemu-headless-arch-extra \
+            edk2-ovmf
 
       - name: Prepare repos for mkosi
         run: |
@@ -50,6 +52,44 @@ jobs:
 
       - name: List output
         run: ls -lh mkosi.output
+
+      - name: Boot test arcX image
+        run: |
+          FILE=$(ls -t mkosi.output/arcX_*.raw | head -n1)
+          OVMF=$(find /usr/share/edk2 -name 'OVMF*.fd' -o -name 'OVMF_CODE*.fd' | head -n1)
+
+          echo "Image: $FILE"
+          echo "UEFI firmware: $OVMF"
+
+          timeout 120 qemu-system-x86_64 \
+            -drive if=pflash,format=raw,readonly=on,file="$OVMF" \
+            -drive format=raw,file="$FILE" \
+            -m 2G \
+            -smp 2 \
+            -nographic \
+            -serial mon:stdio \
+            -no-reboot \
+            2>&1 | tee boot-test.log || true
+
+          echo ""
+          echo "=== Boot test log summary ==="
+          grep -iE "(error|fail|unknown symbol)" boot-test.log || echo "No errors found"
+
+          CRITICAL=0
+          if grep -q "i2c_hid_acpi.*Unknown symbol" boot-test.log; then
+            echo "::error::i2c_hid_acpi module failed to load (missing i2c-hid dependency)"
+            CRITICAL=$((CRITICAL + 1))
+          fi
+          if grep -q "kernel panic" boot-test.log; then
+            echo "::error::Kernel panic detected"
+            CRITICAL=$((CRITICAL + 1))
+          fi
+
+          echo "Critical errors: $CRITICAL"
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Boot test failed with $CRITICAL critical errors"
+            exit 1
+          fi
 
       - name: Upload to Gofile
         run: |
