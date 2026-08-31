@@ -1,4 +1,4 @@
-name: Build Zena-X Image
+name: Build arcX Image
 
 on:
   push:
@@ -44,28 +44,8 @@ jobs:
             "https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst" \
             "https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst"
 
-      - name: Build AUR packages
+      - name: Build arcX
         run: |
-          pacman -S --noconfirm tor torsocks
-          tor &
-          sleep 15
-          
-          useradd -m builder
-          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-          
-          mkdir -p aur-packages
-          su - builder -c "
-            torsocks paru -S --noconfirm --needed --noinstall greetd-dms-greeter-git"
-
-          cp /home/builder/.cache/paru/clone/*/*.pkg.tar.zst aur-packages/ || true
-          repo-add aur-packages/aur.db.tar.gz aur-packages/*.pkg.tar.zst
-          echo "=== Packages ==="
-          ls -l aur-packages
-
-      - name: Build Zena-X
-        run: |
-          python -m http.server 8080 --bind 0.0.0.0 --directory aur-packages &
-          sleep 2
           mkosi --image-version=$(date +%Y.%m.%d) build --output-dir mkosi.output
 
       - name: List output
@@ -73,7 +53,7 @@ jobs:
 
       - name: Upload to Gofile
         run: |
-          FILE=$(ls -t mkosi.output/Zena-X_*.raw | head -n1)
+          FILE=$(ls -t mkosi.output/arcX_*.raw | head -n1)
 
           curl --fail \
               --retry 5 \
