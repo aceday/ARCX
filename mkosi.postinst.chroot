@@ -21,3 +21,5 @@ enable sddm.service
 EOF
 
 systemctl set-default graphical.target
+
+mkinitcpio -P
