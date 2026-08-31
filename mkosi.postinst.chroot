@@ -16,6 +16,7 @@ enable NetworkManager.service
 disable systemd-networkd.service
 disable systemd-networkd.socket
 enable systemd-homed.service
+enable systemd-homed-firstboot.service
 enable nix-daemon.socket
 enable sddm.service
 EOF
